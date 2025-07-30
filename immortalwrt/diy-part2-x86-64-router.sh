@@ -118,15 +118,12 @@ default_packages=(
     "kmod-fs-nfts3"
     "kmod-fs-btrfs"
     "kmod-fs-ext4"
-    "kmod-wireguard"
     "kmod-sched-cake"
-    "wireguard-tools"
     "libc"
     "libgcc"
     "libustream-openssl"
     "logd"
     "luci-app-package-manager"
-    "luci-proto-wireguard"
     "luci-app-nlbwmon"
     "luci-app-sqm"
     "luci-compat"
@@ -244,10 +241,6 @@ config_package_add luci-app-filebrowser
 # frp客户端和服务端
 config_package_add luci-app-frpc
 config_package_add luci-app-frps
-# netdata
-config_package_add luci-app-netdata
-# 宽带聚合
-config_package_add luci-app-mwan3
 # openclash
 config_package_add luci-app-openclash
 # docker相关
@@ -278,8 +271,8 @@ config_package_add luci-app-ttyd
 #### 第三方软件包
 
 # 一个适用于官方openwrt(22.03/23.05/24.10) firewall4的turboacc
-curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && yes 
-| bash add_turboacc.sh --no-sfe
+curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh
+echo -e "y\ny\ny\ny\ny" | bash add_turboacc.sh --no-sfe
 config_package_add luci-app-turboacc
 
 
@@ -332,9 +325,17 @@ rm -rf package/luci-app-unblockmusic package/luci-app-unblockneteasemusic packag
 git_sparse_clone main https://github.com/kenzok8/small-package luci-app-unblockmusic luci-app-unblockneteasemusic UnblockNeteaseMusic UnblockNeteaseMusic-Go
 config_package_add luci-app-unblockmusic
 config_package_add luci-app-unblockneteasemusic
+config_package_add UnblockNeteaseMusic
+config_package_add UnblockNeteaseMusic-Go
 
 # filetransfer 和 v2ray-server
-rm -rf package/luci-app-filetransfer package/luci-app-v2ray-server
-git_sparse_clone openwrt-24.10 https://github.com/coolsnowwolf/luci applications/luci-app-filetransfer applications/luci-app-v2ray-server
+rm -rf package/luci-app-filetransfer package/luci-app-v2ray-server package/luci-app-mwan3-helper
+git_sparse_clone openwrt-24.10 https://github.com/coolsnowwolf/luci applications/luci-app-filetransfer applications/luci-app-v2ray-server applications/luci-app-mwan3-helper
 config_package_add luci-app-filetransfer
 config_package_add luci-app-v2ray-server
+config_package_add luci-app-mwan3-helper
+
+# netdata
+rm -rf package/luci-app-netdata
+git clone https://github.com/sirpdboy/luci-app-netdata package/luci-app-netdata
+config_package_add luci-app-netdata
