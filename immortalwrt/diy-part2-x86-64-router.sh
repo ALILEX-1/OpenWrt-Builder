@@ -60,13 +60,24 @@ function clean_packages(){
 }
 
 # Git稀疏克隆，只克隆指定目录到本地
+function git_clone() {
+  git clone --depth 1 $1 $2 || true
+}
+
 function git_sparse_clone() {
-  branch="$1" repourl="$2" && shift 2
-  git clone --depth=1 -b $branch --single-branch --filter=blob:none --sparse $repourl
-  repodir=$(echo $repourl | awk -F '/' '{print $(NF)}')
-  cd $repodir && git sparse-checkout set $@
-  mv -f $@ ../package
-  cd .. && rm -rf $repodir
+  branch="$1" rurl="$2" localdir="$3" && shift 3
+  # 1. 克隆指定分支的仓库到一个临时目录，但不检出任何文件
+  git clone -b $branch --depth 1 --filter=blob:none --sparse $rurl $localdir
+  cd $localdir
+  # 2. 初始化稀疏检出功能
+  git sparse-checkout init --cone
+  # 3. 设置需要检出的具体目录/文件
+  git sparse-checkout set $@
+  # 4. 将检出的目录/文件移动到编译环境的 package 目录下
+  mv -n $@ ../package
+  cd ..
+  # 5. 删除临时目录，清理现场
+  rm -rf $localdir
 }
 
 ##########################
@@ -87,6 +98,7 @@ default_packages=(
     "firewall4"
     "fstools"
     "grub2-bios-setup"
+    "i915-firmware"
     "i915-firmware-dmc"
     "kmod-8139cp"
     "kmod-8139too"
@@ -139,7 +151,6 @@ default_packages=(
     "odhcp6c"
     "odhcpd-ipv6only"
     "opkg"
-    "pdnsd-alt",
     "partx-utils"
     "ppp"
     "ppp-mod-pppoe"
@@ -149,6 +160,12 @@ default_packages=(
     "urandom-seed"
     "urngd"
     "boost"
+    "yt-dlp"
+    "qbittorrent-enhanced-edition"
+    "transmission-cli"
+    "transmission-daemon"
+    "transmission-web"
+    "transmission-web-control"
 )
 
 # 在循环前添加
@@ -257,42 +274,19 @@ config_package_add luci-app-transmission
 config_package_add luci-app-nfs
 #硬盘分区显示
 config_package_add luci-app-diskman
-
 # watchcat
 config_package_add luci-app-watchcat
 # zerotier
 config_package_add luci-app-zerotier
-
 # upnp自动端口映射
 config_package_add luci-app-upnp
 # tty 终端
 config_package_add luci-app-ttyd
+# docker
+config_package_add luci-lib-docker
+# dashbord
+config_package_add luci-mod-dashboard 
 
-
-
-# # 清理可能的配置冲突
-# make distclean
-# ./scripts/feeds clean
-# ./scripts/feeds update -a
-# ./scripts/feeds install -a
-
-# # 删除有问题的包配置，避免循环依赖
-# config_package_del python3-bcrypt
-# config_package_del python3-passlib
-# config_package_del python3-werkzeug
-# config_package_del python3-asgiref
-# config_package_del python3-jinja2
-# config_package_del python3-click-log
-# config_package_del python3-click
-# config_package_del python3-networkx
-# config_package_del python3-markupsafe
-# config_package_del python3-netifaces
-# config_package_del python3-sqlparse
-# config_package_del python3-unidecode
-# config_package_del snort
-# config_package_del flent-tools
-# config_package_del luci-app-alist
-# config_package_del libdb47
 
 #### 第三方软件包
 rm -rf package/custom
@@ -319,39 +313,71 @@ config_package_add luci-app-partexp
 config_package_add luci-app-netspeedtest
 
 ## iStore 应用市场 只支持 x86_64 和 arm64 设备
-##git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser luci-app-ssr-mudb-server
-rm -rf package/luci
-git_sparse_clone main https://github.com/linkease/istore luci
+##git_sparse_clone main https://github.com/Lienol/openwrt-package temp-lienol luci-app-filebrowser luci-app-ssr-mudb-server
+git_sparse_clone main https://github.com/linkease/istore temp-istore luci
 config_package_add luci-app-store
 
 ## passwall2
-rm -rf package/luci-app-passwall2
-git_sparse_clone master https://github.com/kenzok8/small luci-app-passwall2
+git_sparse_clone master https://github.com/kenzok8/small temp-small luci-app-passwall2
 config_package_add luci-app-passwall2
 
 ## 音乐解锁相关
-rm -rf package/luci-app-unblockmusic package/luci-app-unblockneteasemusic package/UnblockNeteaseMusic package/UnblockNeteaseMusic-Go package/luci-app-emby
-git_sparse_clone main https://github.com/kenzok8/small-package luci-app-unblockmusic luci-app-unblockneteasemusic UnblockNeteaseMusic UnblockNeteaseMusic-Go luci-app-emby
-config_package_add luci-app-unblockmusic
-config_package_add luci-app-unblockneteasemusic
-config_package_add UnblockNeteaseMusic
-config_package_add UnblockNeteaseMusic-Go
-config_package_add luci-app-emby
+# 定义需要克隆和添加的音乐解锁相关包
+unblock_music_packages=(
+    "luci-app-easyupdate"
+    "luci-app-systools"
+    "luci-app-emby"
+    "luci-app-eqosplus"
+    "luci-app-poweroffdevice"
+    "luci-app-unblockmusic"
+    "luci-app-unblockneteasemusic"
+    "UnblockNeteaseMusic"
+    "UnblockNeteaseMusic-Go"
+    luci-app-timecontrol
+)
+
+# 一次性克隆所有包
+git_sparse_clone main https://github.com/kenzok8/small-package temp-small-package "${unblock_music_packages[@]}"
+
+# 循环添加每个包的配置
+for pkg in "${unblock_music_packages[@]}"; do
+    config_package_add "$pkg"
+done
+
+# 添加pdnsd-alt包
+git_sparse_clone master https://github.com/coolsnowwolf/packages temp-lede-packages net/pdnsd-alt
+config_package_add pdnsd-alt
+
+# 从 coolsnowwolf/luci 添加多个应用
+# 定义需要克隆和添加的应用名称列表
+coolsnowwolf_apps=(
+    "filetransfer"
+    "v2ray-server"
+    "turboacc"
+    "fileassistant"
+    "mwan3"
+    "mwan3helper"
+)
+
+# 动态生成 git sparse-checkout 所需的路径
+clone_paths=()
+for app in "${coolsnowwolf_apps[@]}"; do
+    clone_paths+=("applications/luci-app-${app}")
+done
+
+# 一次性克隆所有应用
+git_sparse_clone openwrt-24.10 https://github.com/coolsnowwolf/luci temp-lede-luci "${clone_paths[@]}"
+
 # 添加 NodeJS 支持
 config_add PACKAGE_luci-app-unblockmusic_INCLUDE_UnblockNeteaseMusic_NodeJS
 
-# filetransfer 和 v2ray-server 从lean中添加
-config_package_add luci-app-filetransfer
-config_package_add luci-app-v2ray-server
-config_package_add luci-app-turboacc
-config_package_add luci-app-fileassistant
-config_package_add luci-app-nft-timecontrol
-config_package_add luci-app-mwan3
-config_package_add luci-app-mwan3-helper
+# 循环添加每个应用的包配置
+for app in "${coolsnowwolf_apps[@]}"; do
+    config_package_add "luci-app-${app}"
+done
 
 
 # netdata
-rm -rf package/luci-app-netdata
 git clone https://github.com/sirpdboy/luci-app-netdata package/luci-app-netdata
 config_package_add luci-app-netdata
 
