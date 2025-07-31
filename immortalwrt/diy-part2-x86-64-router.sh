@@ -164,7 +164,6 @@ default_packages=(
     "qbittorrent-enhanced-edition"
     "transmission-cli"
     "transmission-daemon"
-    "transmission-web"
     "transmission-web-control"
 )
 
