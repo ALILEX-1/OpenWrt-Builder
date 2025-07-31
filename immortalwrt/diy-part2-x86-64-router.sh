@@ -269,23 +269,6 @@ config_package_add luci-app-ttyd
 
 
 #### 第三方软件包
-
-# 一个适用于官方openwrt(22.03/23.05/24.10) firewall4的turboacc
-curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh
-echo -e "y\ny\ny\ny\ny" | bash add_turboacc.sh --no-sfe
-config_package_add luci-app-turboacc
-
-
-# adguardhome 文件管理fileassistant
-rm -rf package/luci-app-fileassistant
-git_sparse_clone main https://github.com/kenzok8/small-package  luci-app-fileassistant
-config_package_add luci-app-fileassistant
-
-# 上网时间控制NFT版
-rm -rf package/luci-app-timecontrol
-git clone https://github.com/sirpdboy/luci-app-timecontrol package/luci-app-timecontrol
-config_package_add luci-app-nft-timecontrol
-
 rm -rf package/custom
 mkdir -p package/custom
 git clone --depth 1 https://github.com/DoTheBetter/OpenWrt-Packages.git package/custom
@@ -327,13 +310,16 @@ config_package_add luci-app-unblockmusic
 config_package_add luci-app-unblockneteasemusic
 config_package_add UnblockNeteaseMusic
 config_package_add UnblockNeteaseMusic-Go
+# 添加 NodeJS 支持
+config_add PACKAGE_luci-app-unblockmusic_INCLUDE_UnblockNeteaseMusic_NodeJS
 
-# filetransfer 和 v2ray-server
-rm -rf package/luci-app-filetransfer package/luci-app-v2ray-server package/luci-app-mwan3-helper
-git_sparse_clone openwrt-24.10 https://github.com/coolsnowwolf/luci applications/luci-app-filetransfer applications/luci-app-v2ray-server applications/luci-app-mwan3-helper
+# filetransfer 和 v2ray-server 从lean中添加
 config_package_add luci-app-filetransfer
 config_package_add luci-app-v2ray-server
-config_package_add luci-app-mwan3-helper
+config_package_add luci-app-turboacc
+config_package_add luci-app-fileassistant
+config_package_add luci-app-nft-timecontrol
+
 
 # netdata
 rm -rf package/luci-app-netdata

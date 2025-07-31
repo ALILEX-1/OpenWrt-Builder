@@ -15,7 +15,7 @@
 
 # Add a feed source
 #echo 'src-git helloworld https://github.com/fw876/helloworld' >>feeds.conf.default
-#echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >>feeds.conf.default
+echo 'src-git luci_lean https://github.com/coolsnowwolf/luci.git;openwrt-24.10' >>feeds.conf.default
 
 # 使用 O2 级别的优化
 sed -i 's,Os,O2 -march=x86-64-v2,g' include/target.mk
