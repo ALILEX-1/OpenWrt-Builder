@@ -181,7 +181,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: prepared-source-${{ needs.prepare.outputs.cache-key }}
-          path: /workdir
+          path: /workdir/openwrt
 
       - name: 链接源码目录
         run: |
