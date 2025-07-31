@@ -40,6 +40,7 @@ function config_package_del(){
 function config_package_add(){
     package="PACKAGE_$1"
     config_add $package
+    echo "添加处理包: [$package]"
 }
 
 function drop_package(){
@@ -138,6 +139,7 @@ default_packages=(
     "odhcp6c"
     "odhcpd-ipv6only"
     "opkg"
+    "pdnsd-alt",
     "partx-utils"
     "ppp"
     "ppp-mod-pppoe"
@@ -152,7 +154,7 @@ default_packages=(
 # 在循环前添加
 echo "=== 开始处理数组 ==="
 for package in "${default_packages[@]}"; do
-    echo "处理包: [$package]"
+
     config_package_add "$package"
 done
 echo "=== 数组处理完成 ==="
@@ -268,6 +270,30 @@ config_package_add luci-app-ttyd
 
 
 
+# # 清理可能的配置冲突
+# make distclean
+# ./scripts/feeds clean
+# ./scripts/feeds update -a
+# ./scripts/feeds install -a
+
+# # 删除有问题的包配置，避免循环依赖
+# config_package_del python3-bcrypt
+# config_package_del python3-passlib
+# config_package_del python3-werkzeug
+# config_package_del python3-asgiref
+# config_package_del python3-jinja2
+# config_package_del python3-click-log
+# config_package_del python3-click
+# config_package_del python3-networkx
+# config_package_del python3-markupsafe
+# config_package_del python3-netifaces
+# config_package_del python3-sqlparse
+# config_package_del python3-unidecode
+# config_package_del snort
+# config_package_del flent-tools
+# config_package_del luci-app-alist
+# config_package_del libdb47
+
 #### 第三方软件包
 rm -rf package/custom
 mkdir -p package/custom
@@ -304,12 +330,13 @@ git_sparse_clone master https://github.com/kenzok8/small luci-app-passwall2
 config_package_add luci-app-passwall2
 
 ## 音乐解锁相关
-rm -rf package/luci-app-unblockmusic package/luci-app-unblockneteasemusic package/UnblockNeteaseMusic package/UnblockNeteaseMusic-Go
-git_sparse_clone main https://github.com/kenzok8/small-package luci-app-unblockmusic luci-app-unblockneteasemusic UnblockNeteaseMusic UnblockNeteaseMusic-Go
+rm -rf package/luci-app-unblockmusic package/luci-app-unblockneteasemusic package/UnblockNeteaseMusic package/UnblockNeteaseMusic-Go package/luci-app-emby
+git_sparse_clone main https://github.com/kenzok8/small-package luci-app-unblockmusic luci-app-unblockneteasemusic UnblockNeteaseMusic UnblockNeteaseMusic-Go luci-app-emby
 config_package_add luci-app-unblockmusic
 config_package_add luci-app-unblockneteasemusic
 config_package_add UnblockNeteaseMusic
 config_package_add UnblockNeteaseMusic-Go
+config_package_add luci-app-emby
 # 添加 NodeJS 支持
 config_add PACKAGE_luci-app-unblockmusic_INCLUDE_UnblockNeteaseMusic_NodeJS
 
@@ -319,9 +346,12 @@ config_package_add luci-app-v2ray-server
 config_package_add luci-app-turboacc
 config_package_add luci-app-fileassistant
 config_package_add luci-app-nft-timecontrol
+config_package_add luci-app-mwan3
+config_package_add luci-app-mwan3-helper
 
 
 # netdata
 rm -rf package/luci-app-netdata
 git clone https://github.com/sirpdboy/luci-app-netdata package/luci-app-netdata
 config_package_add luci-app-netdata
+
