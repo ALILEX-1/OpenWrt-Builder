@@ -18,9 +18,12 @@ env:
   TZ: Asia/Shanghai
 
 jobs:
-  build:
+  prepare:
+    name: Prepare Build Environment
     runs-on: ubuntu-24.04
-
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
+      
     steps:
       - name: 检查服务器配置
         run: |
@@ -51,12 +54,30 @@ jobs:
           docker-images: true
           swap-storage: true
 
-      - name: 检查磁盘检使用情况
+      - name: 检查磁盘使用情况
         if: (!cancelled())
         run: df -hT
 
       - name: 准备完成
         uses: actions/checkout@main
+
+      - name: 生成缓存键
+        id: cache-key
+        run: |
+          CACHE_KEY="${{ env.REPO_BRANCH }}-$(date +'%Y%m%d')-${{ hashFiles('immortalwrt/diy-part1-x86-64.sh', 'immortalwrt/diy-part2-x86-64-router.sh') }}"
+          echo "key=${CACHE_KEY}" >> $GITHUB_OUTPUT
+          echo "使用缓存键: ${CACHE_KEY}"
+
+      - name: 缓存 OpenWrt 源码和依赖
+        uses: actions/cache@v4
+        id: cache-openwrt
+        with:
+          path: |
+            /workdir/openwrt
+            ~/.cache/openwrt-build
+          key: openwrt-source-${{ steps.cache-key.outputs.key }}
+          restore-keys: |
+            openwrt-source-${{ env.REPO_BRANCH }}-
 
       - name: 初始化编译环境
         env:
@@ -69,13 +90,21 @@ jobs:
           sudo timedatectl set-timezone "${TZ}"
           sudo mkdir -p /workdir
           sudo chown $USER:$GROUPS /workdir
+          mkdir -p ~/.cache/openwrt-build
 
       - name: 下载固件源码
+        if: steps.cache-openwrt.outputs.cache-hit != 'true'
         working-directory: /workdir
         run: |
           df -hT $PWD
           git clone -b ${REPO_BRANCH} --single-branch --depth 1 ${REPO_URL} openwrt
           ln -sf /workdir/openwrt ${GITHUB_WORKSPACE}/openwrt
+
+      - name: 链接已缓存的源码
+        if: steps.cache-openwrt.outputs.cache-hit == 'true'
+        run: |
+          ln -sf /workdir/openwrt ${GITHUB_WORKSPACE}/openwrt
+          echo "使用缓存的源码"
 
       - name: 加载自定义feeds
         run: |
@@ -101,11 +130,69 @@ jobs:
           cd openwrt
           ${GITHUB_WORKSPACE}/${DIY_P2_SH}
 
+      - name: 生成最终配置
+        run: |
+          cd openwrt
+          make defconfig
+
+      - name: 上传准备完成的源码
+        uses: actions/upload-artifact@v4
+        with:
+          name: prepared-source-${{ steps.cache-key.outputs.key }}
+          path: |
+            /workdir/openwrt
+          retention-days: 1
+
+  build:
+    name: Build Firmware
+    runs-on: ubuntu-24.04
+    needs: prepare
+    
+    steps:
+      - name: 检查服务器配置
+        run: |
+          echo "编译任务开始"
+          echo "--------------------------CPU信息--------------------------"
+          echo "CPU物理数量:$(cat /proc/cpuinfo| grep "physical id"| sort| uniq| wc -l)"
+          echo -e "CPU核心及版本信息：$(cat /proc/cpuinfo | grep name | cut -f2 -d: | uniq -c) \n"
+          echo "--------------------------内存信息--------------------------"
+          echo "已安装内存详细信息："
+          sudo lshw -short -C memory | grep GiB
+          echo -e "\n"
+          echo "--------------------------硬盘信息--------------------------"
+          df -Th
+
+      - name: 准备完成
+        uses: actions/checkout@main
+
+      - name: 初始化编译环境
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo -E apt-get -qq update
+          sudo bash -c 'bash <(curl -s https://build-scripts.immortalwrt.org/init_build_environment.sh)'
+          sudo -E apt-get -qq autoremove --purge
+          sudo -E apt-get -qq clean
+          sudo timedatectl set-timezone "${TZ}"
+          sudo mkdir -p /workdir
+          sudo chown $USER:$GROUPS /workdir
+
+      - name: 下载准备完成的源码
+        uses: actions/download-artifact@v4
+        with:
+          name: prepared-source-${{ needs.prepare.outputs.cache-key }}
+          path: /workdir
+
+      - name: 链接源码目录
+        run: |
+          ln -sf /workdir/openwrt ${GITHUB_WORKSPACE}/openwrt
+          ls -la /workdir/
+          ls -la openwrt/
+
       - name: 下载软件包
         id: package
         run: |
           cd openwrt
-          make defconfig
           make download -j8
           find dl -size -1024c -exec ls -l {} \;
           find dl -size -1024c -exec rm -f {} \;
@@ -115,9 +202,9 @@ jobs:
         run: |
           cd openwrt
           echo -e "$(($(nproc) + 1)) thread compile"
-          make -j$(($(nproc) + 1))|| make -j1 V=s
+          make -j$(($(nproc) + 1)) || make -j1 V=s
           echo "status=success" >> $GITHUB_OUTPUT
-          echo "COMPILE_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+          echo "COMPILE_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_OUTPUT
 
       - name: 检查磁盘使用情况
         if: (!cancelled())
@@ -142,16 +229,51 @@ jobs:
           rm -rf *.manifest
           rm -rf *kernel.bin
           rm -rf *squashfs-rootfs.img.gz
-          mv immortalwrt-${{ env.OpenWrt_ARCH }}-generic-rootfs.tar.gz immortalwrt-${{ env.OpenWrt_VERSION }}-${{ env.OpenWrt_ARCH }}-generic-rootfs-${{ env.COMPILE_DATE }}.tar.gz
-          mv immortalwrt-${{ env.OpenWrt_ARCH }}-generic-squashfs-combined-efi.img.gz immortalwrt-${{ env.OpenWrt_VERSION }}-${{ env.OpenWrt_ARCH }}-generic-squashfs-combined-efi-${{ env.COMPILE_DATE }}.img.gz
+          mv immortalwrt-${{ env.OpenWrt_ARCH }}-generic-rootfs.tar.gz immortalwrt-${{ env.OpenWrt_VERSION }}-${{ env.OpenWrt_ARCH }}-generic-rootfs-${{ steps.compile.outputs.COMPILE_DATE }}.tar.gz
+          mv immortalwrt-${{ env.OpenWrt_ARCH }}-generic-squashfs-combined-efi.img.gz immortalwrt-${{ env.OpenWrt_VERSION }}-${{ env.OpenWrt_ARCH }}-generic-squashfs-combined-efi-${{ steps.compile.outputs.COMPILE_DATE }}.img.gz
           echo -e "------------------------------- 文件列表 -------------------------------"
           ls
 
+      - name: 上传固件文件
+        if: steps.compile.outputs.status == 'success' && !cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ steps.compile.outputs.COMPILE_DATE }}
+          path: ${{ env.FIRMWARE }}
+          retention-days: 5
+
+  release:
+    name: Release Firmware
+    runs-on: ubuntu-24.04
+    needs: [prepare, build]
+    if: needs.build.result == 'success'
+    
+    steps:
+      - name: 准备完成
+        uses: actions/checkout@main
+
+      - name: 获取编译时间
+        id: get-date
+        run: |
+          COMPILE_DATE=$(date +"%Y%m%d%H%M")
+          echo "COMPILE_DATE=${COMPILE_DATE}" >> $GITHUB_OUTPUT
+          echo "COMPILE_DATE=${COMPILE_DATE}" >> $GITHUB_ENV
+
+      - name: 下载固件文件
+        uses: actions/download-artifact@v4
+        with:
+          pattern: firmware-*
+          merge-multiple: false
+
+      - name: 移动固件文件
+        run: |
+          find . -name "firmware-*" -type d | head -1 | xargs -I {} mv {}/* ./
+          ls -la
+
       - name: 生成发布标签
         id: tag
-        if: steps.compile.outputs.status == 'success' && !cancelled()
         run: |
-          echo "release_tag=${{ env.REPO_NAME }}_${{ env.OpenWrt_VERSION }}_${{ env.OpenWrt_ARCH }}_${{ env.COMPILE_DATE }}" >> ${GITHUB_OUTPUT}
+          echo "release_tag=${{ env.REPO_NAME }}_${{ env.OpenWrt_VERSION }}_${{ env.OpenWrt_ARCH }}_${{ steps.get-date.outputs.COMPILE_DATE }}" >> $GITHUB_OUTPUT
           touch ${{ env.REPO_NAME }}-${{ env.OpenWrt_ARCH }}-release.txt
           echo "
           💻 架构: ${{ env.OpenWrt_ARCH }}
@@ -160,7 +282,7 @@ jobs:
 
           🌳 分支: ${{ env.REPO_BRANCH }}
 
-          ⏱️ 编译时间: ${{ env.COMPILE_DATE }}
+          ⏱️ 编译时间: ${{ steps.get-date.outputs.COMPILE_DATE }}
 
           🌐 管理地址: 192.168.5.1 , 子网掩码: 255.255.255.0
 
@@ -169,7 +291,7 @@ jobs:
           🔒 密码: password 
           
           " > ${{ env.REPO_NAME }}-${{ env.OpenWrt_ARCH }}-release.txt
-          echo "status=success" >> ${GITHUB_OUTPUT}
+          echo "status=success" >> $GITHUB_OUTPUT
 
       - name: 发布固件到 Releases
         uses: softprops/action-gh-release@v2
@@ -177,7 +299,10 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.release_tag }}
           body_path: ${{ env.REPO_NAME }}-${{ env.OpenWrt_ARCH }}-release.txt
-          files: ${{ env.FIRMWARE }}/*
+          files: |
+            *.tar.gz
+            *.img.gz
+            config
 
       - name: 删除 Releases 旧版本
         uses: dev-drprasad/delete-older-releases@master
