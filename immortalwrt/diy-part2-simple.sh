@@ -304,12 +304,9 @@ config_package_add luci-app-zerotier
 config_package_add luci-app-upnp
 # tty 终端
 config_package_add luci-app-ttyd
-# docker
-config_package_add luci-lib-docker
 # dashbord
 config_package_add luci-mod-dashboard 
-#luci-app-netdata
-config_package_add luci-app-netdata
+
 
 
 #### 第三方软件包
@@ -326,17 +323,7 @@ mv package/custom/golang feeds/packages/lang/
 config_package_add luci-theme-argon
 sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/Makefile
 
-# 定时任务。重启、关机、重启网络、释放内存、系统清理、网络共享、关闭网络、自动检测断网重连、MWAN3负载均衡检测重连、自定义脚本等10多个功能
-config_package_add luci-app-taskplan
-config_package_add luci-lib-ipkg
-## 分区扩容。一键自动格式化分区、扩容、自动挂载插件，专为OPENWRT设计，简化OPENWRT在分区挂载上烦锁的操作
-config_package_add luci-app-partexp
-
-#网络速度测试
-config_package_add luci-app-netspeedtest
-
 ## iStore 应用市场 只支持 x86_64 和 arm64 设备
-
 git_sparse_clone main https://github.com/linkease/istore temp-istore luci
 config_package_add luci-app-store
 
@@ -351,7 +338,6 @@ unblock_music_packages=(
     "luci-app-unblockneteasemusic"
     "luci-app-timecontrol"
     "luci-app-passwall2"
-    "luci-app-partexp"
     "luci-app-ssr-plus"
     "luci-app-statistics"
     "luci-app-netdata"
@@ -370,14 +356,7 @@ for app in "${coolsnowwolf_apps[@]}"; do
     config_package_add "luci-app-${app}"
 done
 
-# coolsnowwolf_apps=(
-#     "filetransfer"
-#     "v2ray-server"
-#     "turboacc"
-#     "fileassistant"
-#     "mwan3"
-#     "mwan3helper"
-# )
+
 
 # turboacc
 curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh --no-sfe
