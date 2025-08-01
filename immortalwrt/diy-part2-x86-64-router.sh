@@ -46,8 +46,8 @@ function config_package_add(){
 function drop_package(){
     if [ "$1" != "golang" ];then
         # feeds/base -> package
-        find package/ -follow -name $1 -not -path "package/custom/*" | xargs -rt rm -rf
-        find feeds/ -follow -name $1 -not -path "feeds/base/custom/*" | xargs -rt rm -rf
+        find package/ -follow -name $1 -not -path "package/custom/*" -not -path "package/temp-small-package/*" | xargs -rt rm -rf
+        find feeds/ -follow -name $1 -not -path "feeds/base/custom/*" -not -path "feeds/base/temp-small-package/*" | xargs -rt rm -rf
     fi
 }
 function clean_packages(){
@@ -58,6 +58,7 @@ function clean_packages(){
             drop_package ${item}
         done
 }
+
 
 # Git稀疏克隆，只克隆指定目录到本地
 function git_clone() {
@@ -144,6 +145,7 @@ default_packages=(
     "luci-lib-ipkg"
     "luci-light"
     "luci-app-samba4"
+    "luci-app-mwan3"
     "mkf2fs"
     "mtd"
     "netifd"
@@ -265,6 +267,8 @@ config_package_add luci-app-openclash
 config_package_add luci-app-dockerman
 config_package_add luci-lib-docker
 config_package_add luci-app-dockerd
+config_package_add luci-app-docker
+
 # qbittorent
 config_package_add luci-app-qbittorrent
 # transmission 
@@ -285,6 +289,8 @@ config_package_add luci-app-ttyd
 config_package_add luci-lib-docker
 # dashbord
 config_package_add luci-mod-dashboard 
+#luci-app-netdata
+config_package_add luci-app-netdata
 
 
 #### 第三方软件包
@@ -312,13 +318,9 @@ config_package_add luci-app-partexp
 config_package_add luci-app-netspeedtest
 
 ## iStore 应用市场 只支持 x86_64 和 arm64 设备
-##git_sparse_clone main https://github.com/Lienol/openwrt-package temp-lienol luci-app-filebrowser luci-app-ssr-mudb-server
+
 git_sparse_clone main https://github.com/linkease/istore temp-istore luci
 config_package_add luci-app-store
-
-## passwall2
-git_sparse_clone master https://github.com/kenzok8/small temp-small luci-app-passwall2
-config_package_add luci-app-passwall2
 
 ## 音乐解锁相关
 # 定义需要克隆和添加的音乐解锁相关包
@@ -330,43 +332,22 @@ unblock_music_packages=(
     "luci-app-poweroffdevice"
     "luci-app-unblockmusic"
     "luci-app-unblockneteasemusic"
-    "UnblockNeteaseMusic"
-    "UnblockNeteaseMusic-Go"
-    luci-app-timecontrol
+    "luci-app-timecontrol"
+    "luci-app-passwall2"
+    "luci-app-partexp"
+    "luci-app-ssr-plus"
+    "luci-app-statistics"
+    "luci-app-netdata"
 )
-
-# 一次性克隆所有包
-git_sparse_clone main https://github.com/kenzok8/small-package temp-small-package "${unblock_music_packages[@]}"
-
+# 完整克隆 small-package 仓库的所有包
+mkdir -p package/temp-small-package
+git clone --depth 1 https://github.com/kenzok8/small-package.git package/temp-small-package
+clean_packages package/temp-small-package
 # 循环添加每个包的配置
 for pkg in "${unblock_music_packages[@]}"; do
     config_package_add "$pkg"
 done
-
-# 添加pdnsd-alt包
-git_sparse_clone master https://github.com/coolsnowwolf/packages temp-lede-packages net/pdnsd-alt
-config_package_add pdnsd-alt
-
-# 从 coolsnowwolf/luci 添加多个应用
-# 定义需要克隆和添加的应用名称列表
-coolsnowwolf_apps=(
-    "filetransfer"
-    "v2ray-server"
-    "turboacc"
-    "fileassistant"
-    "mwan3"
-    "mwan3helper"
-)
-
-# 动态生成 git sparse-checkout 所需的路径
-clone_paths=()
-for app in "${coolsnowwolf_apps[@]}"; do
-    clone_paths+=("applications/luci-app-${app}")
-done
-
-# 一次性克隆所有应用
-git_sparse_clone openwrt-24.10 https://github.com/coolsnowwolf/luci temp-lede-luci "${clone_paths[@]}"
-
+ 
 # 添加 NodeJS 支持
 config_add PACKAGE_luci-app-unblockmusic_INCLUDE_UnblockNeteaseMusic_NodeJS
 
@@ -375,8 +356,19 @@ for app in "${coolsnowwolf_apps[@]}"; do
     config_package_add "luci-app-${app}"
 done
 
+# coolsnowwolf_apps=(
+#     "filetransfer"
+#     "v2ray-server"
+#     "turboacc"
+#     "fileassistant"
+#     "mwan3"
+#     "mwan3helper"
+# )
 
-# netdata
-git clone https://github.com/sirpdboy/luci-app-netdata package/luci-app-netdata
-config_package_add luci-app-netdata
+# turboacc
+curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh --no-sfe
+config_package_add luci-app-turboacc
 
+# filetransfer
+git clone https://github.com/DustReliant/luci-app-filetransfer.git package/luci-app-filetransfer
+config_package_add luci-app-filetransfer
