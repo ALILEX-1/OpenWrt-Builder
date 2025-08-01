@@ -1,4 +1,4 @@
-name: immortalwrt24.10 x86-64 Builder
+name: immortalwrt24.10 x86-64 mini版
 
 on:
   workflow_dispatch:
