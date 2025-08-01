@@ -345,7 +345,6 @@ config_package_add luci-app-store
 # 定义需要克隆和添加的音乐解锁相关包
 unblock_music_packages=(
     "luci-app-easyupdate"
-    "luci-app-systools"
     "luci-app-emby"
     "luci-app-eqosplus"
     "luci-app-poweroffdevice"
@@ -382,7 +381,7 @@ done
 # )
 
 # turboacc
-curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh --no-sfe
+curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && yes | head -5 | bash add_turboacc.sh --no-sfe
 config_package_add luci-app-turboacc
 
 # filetransfer
