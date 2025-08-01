@@ -46,17 +46,35 @@ function config_package_add(){
 function drop_package(){
     if [ "$1" != "golang" ];then
         # feeds/base -> package
-        find package/ -follow -name $1 -not -path "package/custom/*" -not -path "package/temp-small-package/*" | xargs -rt rm -rf
-        find feeds/ -follow -name $1 -not -path "feeds/base/custom/*" -not -path "feeds/base/temp-small-package/*" | xargs -rt rm -rf
+        find package/ -follow -name $1 -not -path "package/custom/*" | xargs -rt rm -rf
+        find feeds/ -follow -name $1 -not -path "feeds/base/custom/*" | xargs -rt rm -rf
     fi
 }
+
 function clean_packages(){
     path=$1
-    dir=$(ls -l ${path} | awk '/^d/ {print $NF}')
+    echo "开始清理目录: $path"
+
+    if [ ! -d "$path" ]; then
+        echo "警告: 目录 $path 不存在"
+        return
+    fi
+
+    # 获取目录下的所有子目录名
+    dir=$(ls -l "${path}" 2>/dev/null | awk '/^d/ {print $NF}')
+
+    if [ -z "$dir" ]; then
+        echo "目录 $path 中没有子目录"
+        return
+    fi
+
     for item in ${dir}
         do
-            drop_package ${item}
+            echo "处理包: $item"
+            drop_package "${item}"
         done
+
+    echo "完成清理目录: $path"
 }
 
 
@@ -99,6 +117,7 @@ default_packages=(
     "firewall4"
     "fstools"
     "grub2-bios-setup"
+     "geoview"
     "i915-firmware"
     "i915-firmware-dmc"
     "kmod-8139cp"
@@ -339,10 +358,7 @@ unblock_music_packages=(
     "luci-app-statistics"
     "luci-app-netdata"
 )
-# 完整克隆 small-package 仓库的所有包
-mkdir -p package/temp-small-package
-git clone --depth 1 https://github.com/kenzok8/small-package.git package/temp-small-package
-clean_packages package/temp-small-package
+
 # 循环添加每个包的配置
 for pkg in "${unblock_music_packages[@]}"; do
     config_package_add "$pkg"
