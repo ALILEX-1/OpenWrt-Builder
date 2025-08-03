@@ -81,6 +81,23 @@ jobs:
       - name: 准备完成
         uses: actions/checkout@main
 
+      - name: 安装前彻底清理
+        run: |
+          echo "安装依赖前彻底清理根分区..."
+          # 清理APT缓存
+          sudo apt-get clean
+          sudo rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/*
+          # 清理系统临时文件和日志
+          sudo rm -rf /tmp/* /var/tmp/* /var/log/* 2>/dev/null || true
+          # 清理更多系统文件
+          sudo rm -rf /usr/share/doc/* /usr/share/man/* /usr/share/locale/* 2>/dev/null || true
+          sudo rm -rf /usr/share/sounds/* /usr/share/pixmaps/* 2>/dev/null || true
+          # 清理内核模块备份
+          sudo rm -rf /lib/modules/*/kernel/sound/* 2>/dev/null || true
+          sudo rm -rf /lib/modules/*/kernel/drivers/media/* 2>/dev/null || true
+          echo "清理完成，当前磁盘使用情况："
+          df -hT /
+
       - name: 初始化编译环境
         env:
           DEBIAN_FRONTEND: noninteractive
