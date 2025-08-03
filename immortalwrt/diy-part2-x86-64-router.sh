@@ -117,7 +117,7 @@ default_packages=(
     "firewall4"
     "fstools"
     "grub2-bios-setup"
-     "geoview"
+    "geoview"
     "i915-firmware"
     "i915-firmware-dmc"
     "kmod-8139cp"
@@ -164,7 +164,6 @@ default_packages=(
     "luci-lib-ipkg"
     "luci-light"
     "luci-app-samba4"
-    "luci-app-mwan3"
     "mkf2fs"
     "mtd"
     "netifd"
@@ -181,11 +180,6 @@ default_packages=(
     "urandom-seed"
     "urngd"
     "boost"
-    "yt-dlp"
-    "qbittorrent-enhanced-edition"
-    "transmission-cli"
-    "transmission-daemon"
-    "transmission-web-control"
 )
 
 # 在循环前添加
@@ -277,21 +271,12 @@ config_package_add kmod-usb-net-ipheth
 config_package_add luci-app-argon-config
 # 文件管理
 config_package_add luci-app-filebrowser
-# frp客户端和服务端
-config_package_add luci-app-frpc
-config_package_add luci-app-frps
 # openclash
 config_package_add luci-app-openclash
 # docker相关
 config_package_add luci-app-dockerman
-config_package_add luci-lib-docker
-config_package_add luci-app-dockerd
-config_package_add luci-app-docker
-
 # qbittorent
 config_package_add luci-app-qbittorrent
-# transmission 
-config_package_add luci-app-transmission
 # NFS共享
 config_package_add luci-app-nfs
 #硬盘分区显示
@@ -302,14 +287,15 @@ config_package_add luci-app-watchcat
 config_package_add luci-app-zerotier
 # upnp自动端口映射
 config_package_add luci-app-upnp
-# tty 终端
-config_package_add luci-app-ttyd
 # docker
 config_package_add luci-lib-docker
 # dashbord
 config_package_add luci-mod-dashboard 
 #luci-app-netdata
 config_package_add luci-app-netdata
+# argon 主题#
+config_package_add luci-theme-argon
+config_package_add luci-app-statistics
 
 
 #### 第三方软件包
@@ -323,68 +309,21 @@ rm -rf feeds/packages/lang/golang
 mv package/custom/golang feeds/packages/lang/
 
 # argon 主题
-config_package_add luci-theme-argon
 sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/Makefile
 
-# 定时任务。重启、关机、重启网络、释放内存、系统清理、网络共享、关闭网络、自动检测断网重连、MWAN3负载均衡检测重连、自定义脚本等10多个功能
-config_package_add luci-app-taskplan
-config_package_add luci-lib-ipkg
 ## 分区扩容。一键自动格式化分区、扩容、自动挂载插件，专为OPENWRT设计，简化OPENWRT在分区挂载上烦锁的操作
 config_package_add luci-app-partexp
-
-#网络速度测试
 config_package_add luci-app-netspeedtest
 
 ## iStore 应用市场 只支持 x86_64 和 arm64 设备
-
 git_sparse_clone main https://github.com/linkease/istore temp-istore luci
 config_package_add luci-app-store
-
-## 音乐解锁相关
-# 定义需要克隆和添加的音乐解锁相关包
-unblock_music_packages=(
-    "luci-app-easyupdate"
-    "luci-app-emby"
-    "luci-app-eqosplus"
-    "luci-app-poweroffdevice"
-    "luci-app-unblockmusic"
-    "luci-app-unblockneteasemusic"
-    "luci-app-timecontrol"
-    "luci-app-passwall2"
-    "luci-app-partexp"
-    "luci-app-ssr-plus"
-    "luci-app-statistics"
-    "luci-app-netdata"
-)
-
-# 循环添加每个包的配置
-for pkg in "${unblock_music_packages[@]}"; do
-    config_package_add "$pkg"
-done
- 
-# 添加 NodeJS 支持
-config_add PACKAGE_luci-app-unblockmusic_INCLUDE_UnblockNeteaseMusic_NodeJS
-
-# 循环添加每个应用的包配置
-for app in "${coolsnowwolf_apps[@]}"; do
-    config_package_add "luci-app-${app}"
-done
-
-# coolsnowwolf_apps=(
-#     "filetransfer"
-#     "v2ray-server"
-#     "turboacc"
-#     "fileassistant"
-#     "mwan3"
-#     "mwan3helper"
-# )
 
 # turboacc
 curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh --no-sfe
 config_package_add luci-app-turboacc
 
-# filetransfer
-git clone https://github.com/DustReliant/luci-app-filetransfer.git package/luci-app-filetransfer
-config_package_add luci-app-filetransfer
+git clone https://github.com/UnblockNeteaseMusic/luci-app-unblockneteasemusic.git package/luci-app-unblockneteasemusic
+config_package_add luci-app-unblockneteasemusic
 
 config_package_del speedtestcli

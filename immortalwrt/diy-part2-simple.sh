@@ -117,7 +117,6 @@ default_packages=(
     "firewall4"
     "fstools"
     "grub2-bios-setup"
-     "geoview"
     "i915-firmware"
     "i915-firmware-dmc"
     "kmod-8139cp"
@@ -277,9 +276,6 @@ config_package_add kmod-usb-net-ipheth
 config_package_add luci-app-argon-config
 # 文件管理
 config_package_add luci-app-filebrowser
-# frp客户端和服务端
-config_package_add luci-app-frpc
-config_package_add luci-app-frps
 # openclash
 config_package_add luci-app-openclash
 # docker相关
@@ -287,7 +283,6 @@ config_package_add luci-app-dockerman
 config_package_add luci-lib-docker
 config_package_add luci-app-dockerd
 config_package_add luci-app-docker
-
 # qbittorent
 config_package_add luci-app-qbittorrent
 # transmission 
@@ -302,8 +297,6 @@ config_package_add luci-app-watchcat
 config_package_add luci-app-zerotier
 # upnp自动端口映射
 config_package_add luci-app-upnp
-# tty 终端
-config_package_add luci-app-ttyd
 # dashbord
 config_package_add luci-mod-dashboard 
 
@@ -330,15 +323,13 @@ config_package_add luci-app-store
 ## 音乐解锁相关
 # 定义需要克隆和添加的音乐解锁相关包
 unblock_music_packages=(
-    "luci-app-easyupdate"
+    "luci-app-autoupdaten"
     "luci-app-emby"
     "luci-app-eqosplus"
     "luci-app-poweroffdevice"
-    "luci-app-unblockmusic"
     "luci-app-unblockneteasemusic"
     "luci-app-timecontrol"
     "luci-app-passwall2"
-    "luci-app-ssr-plus"
     "luci-app-statistics"
     "luci-app-netdata"
 )
@@ -348,8 +339,6 @@ for pkg in "${unblock_music_packages[@]}"; do
     config_package_add "$pkg"
 done
  
-# 添加 NodeJS 支持
-config_add PACKAGE_luci-app-unblockmusic_INCLUDE_UnblockNeteaseMusic_NodeJS
 
 # 循环添加每个应用的包配置
 for app in "${coolsnowwolf_apps[@]}"; do
@@ -357,13 +346,7 @@ for app in "${coolsnowwolf_apps[@]}"; do
 done
 
 
-
 # turboacc
 curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh --no-sfe
 config_package_add luci-app-turboacc
 
-# filetransfer
-git clone https://github.com/DustReliant/luci-app-filetransfer.git package/luci-app-filetransfer
-config_package_add luci-app-filetransfer
-
-config_package_del speedtestcli
