@@ -1,62 +1,58 @@
-name: Openwrt Update Checker
+name: Openwrt 更新检查器  # OpenWrt 更新检查工作流
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # 支持手动触发工作流
   schedule:
-    - cron: 0 20 * * *
+    - cron: 0 20 * * *  # 每天 UTC 20:00 自动运行（北京时间凌晨 4:00）
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
+  check:  # 检查任务
+    runs-on: ubuntu-latest  # 在最新版 Ubuntu 运行环境中执行
     strategy:
-      matrix:
+      matrix:  # 矩阵策略配置
         include:
-          - repo: immortalwrt/immortalwrt
-            branch: openwrt-24.10
-            hash_key: immortalwrt_commitHash
-            event: immortalwrt-update
-          - repo: padavanonly/immortalwrt-mt798x-24.10
-            branch: "2410"
-            hash_key: mt798x_commitHash
-            event: mt798x-update
+          - repo: immortalwrt/immortalwrt  # 需要监控的仓库
+            branch: openwrt-24.10  # 监控的分支
+            hash_key: immortalwrt_commitHash  # 提交哈希值存储键名
+            event: immortalwrt-update  # 发现更新时触发的事件类型
 
     steps:
-    - name: Get commit hash
+    - name: 获取提交哈希值  # 获取最新的代码提交哈希值
       id: getHash
       run: |
-        git clone -b ${{ matrix.branch }} --single-branch --depth 1 https://github.com/${{ matrix.repo }} openwrt
-        cd openwrt
-        echo "${{ matrix.hash_key }}=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+        git clone -b ${{ matrix.branch }} --single-branch --depth 1 https://github.com/${{ matrix.repo }} openwrt  # 克隆指定分支的代码
+        cd openwrt  # 进入克隆的代码目录
+        echo "${{ matrix.hash_key }}=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT  # 获取并输出最新提交的哈希值
 
-    - name: Compare commit hash
+    - name: 比较提交哈希值  # 比较当前提交哈希与缓存的哈希值
       id: cacheHash
-      uses: actions/cache@v4
+      uses: actions/cache@v4  # 使用 GitHub Actions 缓存功能
       with:
-        path: .${{ matrix.hash_key }}
-        key: ${{ matrix.hash_key }}_${{ steps.getHash.outputs[matrix.hash_key] }}
+        path: .${{ matrix.hash_key }}  # 缓存文件路径
+        key: ${{ matrix.hash_key }}_${{ steps.getHash.outputs[matrix.hash_key] }}  # 缓存键，包含哈希值
 
-    - name: Save new commit hash
-      if: steps.cacheHash.outputs.cache-hit != 'true'
+    - name: 保存新的提交哈希值  # 当发现新提交时保存哈希值
+      if: steps.cacheHash.outputs.cache-hit != 'true'  # 仅在缓存未命中时执行
       run: |
-        echo ${{ steps.getHash.outputs[matrix.hash_key] }} | tee .${{ matrix.hash_key }}
+        echo ${{ steps.getHash.outputs[matrix.hash_key] }} | tee .${{ matrix.hash_key }}  # 将新哈希值写入文件
 
-    - name: Create a repository dispatch event
-      if: steps.cacheHash.outputs.cache-hit != 'true'
-      uses: peter-evans/repository-dispatch@v3
+    - name: 创建仓库调度事件  # 触发其他工作流进行构建
+      if: steps.cacheHash.outputs.cache-hit != 'true'  # 仅在缓存未命中时执行
+      uses: peter-evans/repository-dispatch@v3  # 使用仓库调度动作
       with:
-        event-type: ${{ matrix.event }}
+        event-type: ${{ matrix.event }}  # 设置事件类型
 
-  del_runs:
-    needs: check
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
+  del_runs:  # 清理任务
+    needs: check  # 依赖于检查任务完成后执行
+    runs-on: ubuntu-latest  # 在最新版 Ubuntu 运行环境中执行
+    permissions:  # 设置权限
+      actions: write  # GitHub Actions 写入权限
+      contents: read  # 仓库内容读取权限
     steps:
-      - name: Delete workflow runs
-        uses: Mattraks/delete-workflow-runs@v2
+      - name: 删除旧的工作流运行记录  # 清理历史记录
+        uses: Mattraks/delete-workflow-runs@v2  # 使用工作流删除动作
         with:
-          token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          retain_days: 1
-          keep_minimum_runs: 1
+          token: ${{ github.token }}  # GitHub 令牌
+          repository: ${{ github.repository }}  # 当前仓库
+          retain_days: 1  # 保留天数
+          keep_minimum_runs: 1  # 至少保留的运行记录数
