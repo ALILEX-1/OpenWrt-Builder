@@ -1,0 +1,63 @@
+# Claude AI 相关文件
+.claude/
+
+# 本地 PPPoE 配置文件
+ppp_local.sh
+
+# OpenWrt Builder - 安全配置
+# 防止意外提交敏感信息
+
+# 包含真实账号密码的配置文件
+*-real.sh
+*-private.sh
+*-secret.sh
+*.secret
+*.private
+*-credentials.*
+*-passwords.*
+*-accounts.*
+
+# 临时配置文件
+temp-config.sh
+local-config.sh
+my-config.sh
+
+# 编译产物
+openwrt/
+workdir/
+*.img
+*.img.gz
+*.tar.gz
+*.bin
+*.manifest
+*.buildinfo
+
+# 日志文件
+*.log
+build.log
+compile.log
+
+# 临时文件
+*.tmp
+*.temp
+*~
+.DS_Store
+Thumbs.db
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 备份文件
+*.bak
+*.backup
+*.orig
+
+# 本地环境变量文件
+.env
+.env.local
+.env.*.local
+
+*.md

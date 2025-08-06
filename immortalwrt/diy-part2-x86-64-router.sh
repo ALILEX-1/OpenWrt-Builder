@@ -196,6 +196,62 @@ echo "=== 数组处理完成 ==="
 sed -i 's/root:::0:99999:7:::/root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.::0:99999:7:::/g' package/base-files/files/etc/shadow
 # 修改默认IP
 sed -i 's/192.168.1.1/192.168.5.1/g' package/base-files/files/bin/config_generate
+
+# 创建 PPPoE 配置的 uci-defaults 脚本
+echo "创建安全的 PPPoE 配置脚本..."
+
+# 从环境变量获取 PPPoE 配置（GitHub Secrets）
+PPPOE_USER="${PPPOE_USERNAME:-}"
+PPPOE_PASS="${PPPOE_PASSWORD:-}"
+
+# 安全日志输出
+if [ -n "$PPPOE_USER" ] && [ -n "$PPPOE_PASS" ]; then
+    echo "检测到 PPPoE 配置信息"
+    echo "用户名: ${PPPOE_USER:0:3}***"
+    echo "密码: [已隐藏]"
+    PPPOE_ENABLED="true"
+else
+    echo "未检测到 PPPoE 配置，固件将使用默认 DHCP 模式"
+    echo "如需配置 PPPoE，请在 GitHub Secrets 中设置 PPPOE_USERNAME 和 PPPOE_PASSWORD"
+    PPPOE_ENABLED="false"
+fi
+
+mkdir -p package/base-files/files/etc/uci-defaults
+cat > package/base-files/files/etc/uci-defaults/99-network-setup << EOF
+#!/bin/sh
+# OpenWrt 网络初始化配置脚本
+# 此脚本在首次启动时执行，配置完成后自动删除
+
+# 日志记录
+exec >/tmp/network-setup.log 2>&1
+
+echo "开始网络配置..."
+
+# PPPoE 配置
+if [ "$PPPOE_ENABLED" = "true" ]; then
+    echo "配置 PPPoE 拨号模式"
+    echo "用户名: ${PPPOE_USER:0:3}***"
+
+    uci set network.wan.proto='pppoe'
+    uci set network.wan.username='$PPPOE_USER'
+    uci set network.wan.password='$PPPOE_PASS'
+    uci set network.wan.ipv6='auto'
+    uci set network.wan.demand='0'
+    uci set network.wan.keepalive='5 3'
+    uci commit network
+
+    echo "PPPoE 配置完成"
+else
+    echo "使用默认 DHCP 模式"
+    echo "如需配置 PPPoE，请编辑此脚本或在 LuCI 界面中配置"
+fi
+
+echo "网络配置脚本执行完成"
+EOF
+
+# 设置脚本可执行权限
+chmod +x package/base-files/files/etc/uci-defaults/99-network-setup
+
 # 添加编译时间到版本信息
 sed -i "s/DISTRIB_DESCRIPTION='.*'/DISTRIB_DESCRIPTION='${REPO_NAME} ${OpenWrt_VERSION} ${OpenWrt_ARCH} Built on $(date +%Y%m%d)'/" package/base-files/files/etc/openwrt_release
 # 添加编译时间到 /etc/banner
@@ -327,3 +383,4 @@ git clone https://github.com/UnblockNeteaseMusic/luci-app-unblockneteasemusic.gi
 config_package_add luci-app-unblockneteasemusic
 
 config_package_del speedtestcli
+

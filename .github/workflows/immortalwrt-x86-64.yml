@@ -142,6 +142,9 @@ jobs:
           [ -e $CONFIG_FILE ] && mv $CONFIG_FILE .config || make defconfig
       
       - name: 加载自定义配置
+        env:
+          PPPOE_USERNAME: ${{ secrets.PPPOE_USERNAME }}
+          PPPOE_PASSWORD: ${{ secrets.PPPOE_PASSWORD }}
         run: |
           chmod +x ${DIY_P2_SH}
           cd openwrt
@@ -234,8 +237,25 @@ jobs:
 
           👤 用户名: root
 
-          🔒 密码: password 
-          
+          🔒 密码: password
+
+          📡 网络配置:
+          - 默认为 DHCP 模式
+          - 支持 PPPoE 拨号配置
+          - 配置文件: /etc/uci-defaults/99-network-setup
+
+          🔐 PPPoE 自动配置（推荐）:
+          1. 仓库 Settings → Secrets and variables → Actions
+          2. 添加 Secret: PPPOE_USERNAME (你的PPPoE用户名)
+          3. 添加 Secret: PPPOE_PASSWORD (你的PPPoE密码)
+          4. 重新运行 Actions 编译，固件将自动配置PPPoE
+
+          🔧 手动配置方法:
+          1. SSH 连接: ssh root@192.168.5.1
+          2. 通过 LuCI 界面: 网络 → 接口 → WAN → 修改
+          3. 协议改为 PPPoE，填入用户名密码
+          4. 保存并应用配置
+
           " > ${{ env.REPO_NAME }}-${{ env.OpenWrt_ARCH }}-release.txt
           echo "status=success" >> ${GITHUB_OUTPUT}
 
