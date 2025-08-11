@@ -302,6 +302,10 @@ config_package_add nano
 config_package_add vim
 # curl
 config_package_add curl
+# ddns
+config_package_add luci-app-ddns-go
+# frc
+config_package_add luci-app-frpc
 
 # tty 免登录
 sed -i 's|/bin/login|/bin/login -f root|g' feeds/packages/utils/ttyd/files/ttyd.config
