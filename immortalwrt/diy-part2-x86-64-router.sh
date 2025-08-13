@@ -357,6 +357,9 @@ config_package_add luci-app-netdata
 config_package_add luci-theme-argon
 config_package_add luci-app-statistics
 
+# 系统升级
+config_package_add luci-app-attendedsysupgrade
+
 
 #### 第三方软件包
 rm -rf package/custom
