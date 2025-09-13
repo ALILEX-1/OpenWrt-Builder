@@ -77,7 +77,8 @@ config_del TARGET_DEVICE_mediatek_mt7986_DEVICE_xiaomi_redmi-router-ax6000-stock
 config_del TARGET_ROOTFS_INITRAMFS
 config_del TARGET_INITRAMFS_COMPRESSION_NONE
 
-config_add TARGET_mediatek_mt7986_DEVICE_xiaomi_redmi-router-ax6000
+#config_add TARGET_mediatek_mt7986_DEVICE_xiaomi_redmi-router-ax6000
+config_add TARGET_mediatek_mt7986_DEVICE_jdcloud_re-cp-03
 
 # 设置'root'密码为 'password'
 sed -i 's/root:::0:99999:7:::/root:$1$V4UetPzk$CYXluq4wUazHjmCDBCqXF.::0:99999:7:::/g' package/base-files/files/etc/shadow
