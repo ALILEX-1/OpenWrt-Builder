@@ -13,8 +13,8 @@ env:
   OpenWrt_ARCH: mt7986
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
-  DIY_P1_SH: ImmortalWrt/diy-part1.sh
-  DIY_P2_SH: ImmortalWrt/diy-part2.sh
+  DIY_P1_SH: ImmortalWrt/diy-part1-mt7986-ax6000.sh
+  DIY_P2_SH: ImmortalWrt/diy-part2-mt7986-ax6000.sh
   TZ: Asia/Shanghai
 
 jobs:
